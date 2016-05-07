@@ -102,7 +102,7 @@ function recursive_scan () {
 		if [ -d "$d"  ] && [  $RECURSIVE = "y" ]; then
 	# object is directory (and not SAVE)
 			logtext "==== jumping to subdir $d ===="
- 			Genre="$d" # use current dir (not full path) as Genre - useful for movie collections organized in directories
+#  			Genre="$d" # use current dir (not full path) as Genre - useful for movie collections organized in directories
  			cd "$d"
 	# recursively call safeback!
 			recursive_scan 
@@ -114,6 +114,7 @@ function recursive_scan () {
                         if [ -e "$eitfile" ]; then
                             logtext "parsing $eitfile"
                             CurrentDir="$PWD"
+ 			    Genre=$(basename "$CurrentDir")
                             Filename="$CurrentDir/""$eitfile"
                             parse_eit "$eitfile"
                         fi
