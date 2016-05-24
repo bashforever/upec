@@ -14,11 +14,11 @@
 # =============== Enter or change here the Configuration according to your needs ======
 # CAUTION: options are case sensitive!
 BASEPATH="/home/immanuel/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
-VIDEOPATH="/mnt/Aufnahmen" # root path for your video/eit-files
+VIDEOPATH="/mnt/Aufnahmen/2014" # root path for your video/eit-files
 # VIDEOPATH="$BASEPATH"
 LOGFILE="$BASEPATH""/upec.log"
 DEBUGLOG="$BASEPATH""/upecdebug.log"
-# curr. not implemented: REBUILD="n" # if set to 'y' all nfo-files are rebuilt/overwritten
+REBUILD="n" # if set to 'y' all nfo-files are rebuilt/overwritten
 RECURSIVE="y" # if set to 'n' no subdirs will be searched for EIT-files
 MINTITLELEN=25 # if the TITLE extracted from short_descriptor is shorter than MINTITLELEN the long description will be added (concatenated)
 DRYRUN="n" # set DRYRUN to "y" if NFO files should be built - otherwise there is just logfiles and the CSV
@@ -104,20 +104,29 @@ function recursive_scan () {
 			logtext "==== jumping to subdir $d ===="
 #  			Genre="$d" # use current dir (not full path) as Genre - useful for movie collections organized in directories
  			cd "$d"
-	# recursively call safeback!
+	# recursively call 
 			recursive_scan 
  			cd ..
 		else
 	# object is no directory: process as file
                         filetrunc=$(echo $d | sed 's/.eit//g')
                         eitfile="$filetrunc.eit"
+ 			nfofile="$filetrunc.nfo"
                         if [ -e "$eitfile" ]; then
-                            logtext "parsing $eitfile"
+                            logtext "==== found EIT-file:  $eitfile"
                             CurrentDir="$PWD"
  			    Genre=$(basename "$CurrentDir")
                             Filename="$CurrentDir/""$eitfile"
-                            parse_eit "$eitfile"
-                        fi
+ 	# check for rebuild-option
+ 			    if [ -e "$nfofile" ] && [ $REBUILD = "y" ]; then
+ 				logtext "==== found NFO-file $nfofile: rebuilding"
+                                parse_eit "$eitfile"
+                            fi
+ 			    if [ ! -e "$nfofile" ]; then
+ 				logtext "==== NOT found NFO-File $nfofile: creating"
+ 				parse_eit "$eitfile"
+ 			    fi
+ 			fi
 		fi
 	done
         logtext "=== recursive scan finished! ==="
