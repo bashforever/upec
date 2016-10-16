@@ -10,22 +10,23 @@
 # Copyright:
 # Copyright: TwT (from Keywelt-board), bashforever (from github).
 # Version 0.4-alpha (currently not released!)
+# Released to github/upec
 #
 # =============== Enter or change here the Configuration according to your needs ======
 # CAUTION: options are case sensitive!
 BASEPATH="/home/immanuel/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
-VIDEOPATH="/mnt/Aufnahmen/2014" # root path for your video/eit-files
+VIDEOPATH="/mnt/Aufnahmen" # root path for your video/eit-files
 # VIDEOPATH="$BASEPATH"
 LOGFILE="$BASEPATH""/upec.log"
 DEBUGLOG="$BASEPATH""/upecdebug.log"
 REBUILD="n" # if set to 'y' all nfo-files are rebuilt/overwritten
 RECURSIVE="y" # if set to 'n' no subdirs will be searched for EIT-files
 MINTITLELEN=25 # if the TITLE extracted from short_descriptor is shorter than MINTITLELEN the long description will be added (concatenated)
-DRYRUN="n" # set DRYRUN to "y" if NFO files should be built - otherwise there is just logfiles and the CSV
+DRYRUN="n" # set DRYRUN to "y" if NFO files should not be built - then there is just logfiles and the CSV
 # curr. not implemented: WRITECSV="y" # if y: fields are also written in CSV-style to "upec.csv" 
 CSVFile="$BASEPATH""/upec.csv" 
 CSVDelimiter="|"
-DEBUG="y" # if y debug output will added
+DEBUG="n" # if y debug output will added
 CLEARLOG="y" # if y, logfiles will be cleared on start
 # ============== do not change anything below ! ==============
 
