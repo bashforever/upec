@@ -14,12 +14,12 @@
 #
 # =============== Enter or change here the Configuration according to your needs ======
 # CAUTION: options are case sensitive!
-BASEPATH="/home/immanuel/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
-VIDEOPATH="/mnt/Aufnahmen" # root path for your video/eit-files
+BASEPATH="/etc/iwops/upec" # path where upec, logfiles and CSV shoudl reside
+VIDEOPATH="/media/Recs/Aufnahmen" # root path for your video/eit-files
 # VIDEOPATH="$BASEPATH"
 LOGFILE="$BASEPATH""/upec.log"
 DEBUGLOG="$BASEPATH""/upecdebug.log"
-REBUILD="n" # if set to 'y' all nfo-files are rebuilt/overwritten
+REBUILD="y" # if set to 'y' all nfo-files are rebuilt/overwritten
 RECURSIVE="y" # if set to 'n' no subdirs will be searched for EIT-files
 MINTITLELEN=25 # if the TITLE extracted from short_descriptor is shorter than MINTITLELEN the long description will be added (concatenated)
 DRYRUN="n" # set DRYRUN to "y" if NFO files should not be built - then there is just logfiles and the CSV
