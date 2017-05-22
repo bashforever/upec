@@ -9,13 +9,34 @@
 #
 # Copyright:
 # Copyright: TwT (from Keywelt-board), bashforever (from github).
-# Version 0.4-alpha (currently not released!)
 # Released to github/upec
+#
+#
+# =============================== added features =====================================
+# 2017-01-18: new features!
+#
+# === Ignore Directories ===
+# You can place a file (actually a semaphore) named "upecignore.txt" in a directory. Doing this
+# the according directory (and all it's subdirectories!!) will not be scanned by upec. This is
+# useful if you have under your recording-tree a directory holding new recordings or a working
+# dir for doing conversions.
+#
+# === Genre Files ====
+# upec takes by default the name of the current directory as genre. This may be very convenient
+# but there may be cases where you would like to set the genre manually.
+# With this version you can place a file named "upecgenre.txt" in a directory. Thus instead
+# of the directory name the content string of upecgenre.txt will be used as genre for all
+# EIT-files found in this current directory.
 #
 # =============== Enter or change here the Configuration according to your needs ======
 # CAUTION: options are case sensitive!
+<<<<<<< HEAD
 BASEPATH="/etc/iwops/upec" # path where upec, logfiles and CSV shoudl reside
 VIDEOPATH="/media/Recs/Aufnahmen" # root path for your video/eit-files
+=======
+BASEPATH="/home/immanuel/Daten/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
+VIDEOPATH="/home/immanuel/Test" # root path for your video/eit-files
+>>>>>>> 645586d7a4f8cda1ff4ceac2a35b5a86bd4a53bd
 # VIDEOPATH="$BASEPATH"
 LOGFILE="$BASEPATH""/upec.log"
 DEBUGLOG="$BASEPATH""/upecdebug.log"
@@ -99,14 +120,37 @@ function recursive_scan () {
 	
 #        cd "$TARGET"
         logtext "===== Current working dir `pwd`"
+
+# set genre by current dir (full path stripped)
+	Genre=${PWD##*/}
+ 	logtext "==== Current dir: $PWD ==== Genre by directory: $Genre"
+# check for upecgenre. If a upecgenre.txt file is found, use it's content for genre
+ 	if [ -e "upecgenre.txt" ]; then
+ 	    Genre=$(cat "upecgenre.txt")
+ 	    logtext "==== Genre for this directory overwritten with $Genre from upecgenre"
+ 	fi
+
+# 	loop over all files/dirs in current dir
 	for d in *; do
 		if [ -d "$d"  ] && [  $RECURSIVE = "y" ]; then
 	# object is directory (and not SAVE)
 			logtext "==== jumping to subdir $d ===="
-#  			Genre="$d" # use current dir (not full path) as Genre - useful for movie collections organized in directories
  			cd "$d"
+ 	# set genre by current dir (full path stripped)
+ 			Genre=${PWD##*/}
+ 			logtext "==== Current dir: $PWD ==== Genre by directory: $Genre"
+ 	# check for upecgenre. If a upecgenre.txt file is found, use it's content for genre
+ 			if [ -e "upecgenre.txt" ]; then
+ 			    Genre=$(cat "upecgenre.txt")
+ 			    logtext "==== Genre for this directory overwritten with $Genre from upecgenre"
+ 			fi
 	# recursively call 
-			recursive_scan 
+ 	# check for upecignore. Scan current directory only if "upecignore.txt" is NOT found
+ 			if [ ! -e "upecignore.txt" ]; then
+			    recursive_scan 
+ 			else
+ 			    logtext "==== ignoring Subdir $d: `cat upecignore.txt`"
+ 			fi
  			cd ..
 		else
 	# object is no directory: process as file
@@ -115,8 +159,13 @@ function recursive_scan () {
  			nfofile="$filetrunc.nfo"
                         if [ -e "$eitfile" ]; then
                             logtext "==== found EIT-file:  $eitfile"
-                            CurrentDir="$PWD"
- 			    Genre=$(basename "$CurrentDir")
+#                            CurrentDir="$PWD"
+# 	# check for upecgenre. If a upecgenre.txt file is found, use it's content for genre
+# 			    Genre=$(basename "$CurrentDir")
+# 			    if [ -e "upecgenre.txt" ]; then
+# 				Genre=$(cat "upecgenre.txt")
+# 				logtext "==== Genre overwritten with $Genre from upecgenre"
+# 			    fi
                             Filename="$CurrentDir/""$eitfile"
  	# check for rebuild-option
  			    if [ -e "$nfofile" ] && [ $REBUILD = "y" ]; then
