@@ -30,13 +30,11 @@
 #
 # =============== Enter or change here the Configuration according to your needs ======
 # CAUTION: options are case sensitive!
-<<<<<<< HEAD
 BASEPATH="/etc/iwops/upec" # path where upec, logfiles and CSV shoudl reside
 VIDEOPATH="/media/Recs/Aufnahmen" # root path for your video/eit-files
 =======
-BASEPATH="/home/immanuel/Daten/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
-VIDEOPATH="/home/immanuel/Test" # root path for your video/eit-files
->>>>>>> 645586d7a4f8cda1ff4ceac2a35b5a86bd4a53bd
+BASEPATH="/home/immanuel/Skripts/upec" # path where upec, logfiles and CSV shoudl reside
+VIDEOPATH="/home/immanuel/Videos" # root path for your video/eit-files
 # VIDEOPATH="$BASEPATH"
 LOGFILE="$BASEPATH""/upec.log"
 DEBUGLOG="$BASEPATH""/upecdebug.log"
@@ -47,8 +45,9 @@ DRYRUN="n" # set DRYRUN to "y" if NFO files should not be built - then there is 
 # curr. not implemented: WRITECSV="y" # if y: fields are also written in CSV-style to "upec.csv" 
 CSVFile="$BASEPATH""/upec.csv" 
 CSVDelimiter="|"
-DEBUG="n" # if y debug output will added
+DEBUG="y" # if y debug output will added
 CLEARLOG="y" # if y, logfiles will be cleared on start
+VIDEOEXTENSIONS="ts TS mpg MPG mp4 MP4 avi AVI mts MTS m4v"
 # ============== do not change anything below ! ==============
 
 # Global declarations and initializations
@@ -98,7 +97,11 @@ function byte_to_int {
 # Parameter: Text der ins Logfile geschrieben werden soll
 # function for writing text to logfile
 function logtext () {
-   echo "`date`: " $1 2>&1 | tee -a "$LOGFILE"
+   echo "LOG `date`: " $1 2>&1 | tee -a "$LOGFILE"
+   if [ $DEBUG == "y" ]; then
+       echo "DEBUG `date`: " $1 2>&1 | tee -a "$DEBUGLOG"
+   fi
+
 }   
 
 # ===================== function logdebug  ======================================
@@ -106,9 +109,66 @@ function logtext () {
 # function for writing text to logfile
 function logdebug () {
     if [ $DEBUG == "y" ]; then 
-            echo "`date`: " $1 2>&1 | tee -a "$DEBUGLOG"
+            echo "DEBUG `date`: " $1 2>&1 | tee -a "$DEBUGLOG"
     fi
 } 
+
+# ===================== parse video filename =====================================
+# Parameter: Videofilename
+# Output: via global variable "RETURN"
+function parsevideoname () {
+Input="$1"
+Separator=" - "
+
+logdebug "Parse Input: $Input"
+
+# check for input starting with date-time-string
+if [[ "$Input" =~ ^[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])[[:space:]][0-9]{4}* ]]; then
+    logdebug "Valid date"
+# extract year (first 4 digits)
+# echo "US/Central - 10:26 PM (CST)" | sed -n "s/^.*-\s*\(\S*\).*$/\1/p"
+# 
+# -n      suppress printing
+# s       substitute
+# ^.*     anything at the beginning
+# -       up until the dash
+# \s*     any space characters (any whitespace character)
+# \(      start capture group
+# \S*     any non-space characters
+# \)      end capture group
+# .*$     anything at the end
+# \1      substitute 1st capture group for everything on line
+# p       print it
+
+    Year=${Input:0:4}
+    logdebug "filebased Year $Year"
+    # search for separator
+    if [[ $Input == *"$Separator"* ]]; then
+        logdebug "Separator: 8 $Separator 8 found"
+        Title=$(echo "$Input" | sed -n 's/^.*'"$Separator"'/ /p')
+    fi
+    RETURN="$Title"
+    logdebug "filebased Title $Title, returning $RETURN"
+
+else
+    RETURN="$Input"
+    logdebug "Invalid date in video file name, returning $RETURN"
+fi
+
+}
+
+# search for separator
+if [[ $Input == *"$Separator"* ]]; then
+    logdebug "Separator found"
+#    Output=$(echo "$Input" | sed -n "s/^.*"$Separator"*"$Separator"/\1/p")
+    Output=$(echo "$Input" | sed -n 's/^.*'"$Separator"'/ /p')
+fi
+
+logdebug "Output: $Output"
+# return: pasted into global RETURN value
+RETURN="$Output"
+
+#EIF
 
 # ===================== function recursive_scan ======================================
 # Parameter: none, recursive_scan assumes that intended working dir is $PWD
@@ -154,18 +214,16 @@ function recursive_scan () {
  			cd ..
 		else
 	# object is no directory: process as file
-                        filetrunc=$(echo $d | sed 's/.eit//g')
+ 	# get extension
+ 			filetrunc=$(echo "${d%%.*}")
+#                        filetrunc=$(echo $d | sed 's/.eit//g')
+ 			logdebug "Filetrunc: $filetrunc"
                         eitfile="$filetrunc.eit"
  			nfofile="$filetrunc.nfo"
                         if [ -e "$eitfile" ]; then
                             logtext "==== found EIT-file:  $eitfile"
-#                            CurrentDir="$PWD"
-# 	# check for upecgenre. If a upecgenre.txt file is found, use it's content for genre
+                            CurrentDir="$PWD"
 # 			    Genre=$(basename "$CurrentDir")
-# 			    if [ -e "upecgenre.txt" ]; then
-# 				Genre=$(cat "upecgenre.txt")
-# 				logtext "==== Genre overwritten with $Genre from upecgenre"
-# 			    fi
                             Filename="$CurrentDir/""$eitfile"
  	# check for rebuild-option
  			    if [ -e "$nfofile" ] && [ $REBUILD = "y" ]; then
@@ -175,6 +233,36 @@ function recursive_scan () {
  			    if [ ! -e "$nfofile" ]; then
  				logtext "==== NOT found NFO-File $nfofile: creating"
  				parse_eit "$eitfile"
+ 			    fi
+ 	# there is no eit-file: look for file being a video file
+ 			else
+ 			    logtext "==== EIT-file $eitfile not found! Looking for video file ===="
+ 			    fileext=$(echo "${d##*.}")
+ 			    logdebug "==== Extension: $fileext"
+
+ 			    if [[ "$VIDEOEXTENSIONS" =~ "$fileext" ]]; then
+ 				logdebug "Video file found"
+#===================================== Heir gehts weiter:
+# Video file gefunden aber kein EIT
+# Analysiere den Videonamen und entferne Datum und Provider ("nackter Filename")
+# Aus Datum extrahiere das Jahr 
+# schreibe Metadaten:
+                                logdebug "Parsing $filetrunc filebased"
+                                parsevideoname "$filetrunc"
+                                Title="$RETURN"
+                                logdebug "Filename (Title) after normalization: $Title"
+                                nfofile="$filetrunc.nfo"
+                                
+                                if [ -e "$nfofile" ] && [ $REBUILD = "y" ]; then
+                                    logtext "==== found NFO-file $nfofile: rebuilding"
+                                    parse_filebased "$filetrunc"
+                                fi
+                                if [ ! -e "$nfofile" ]; then
+                                    logtext "==== NOT found NFO-File $nfofile: creating"
+                                    parse_filebased "$filetrunc"
+                                fi
+ 		       	    else
+ 				logdebug "No Video found"
  			    fi
  			fi
 		fi
@@ -309,6 +397,79 @@ logdebug "descriptor_length calc $descriptor_length"
 }
 
 
+# ========================== parse_filebased ==================
+# parameter: filename (without extension, normalized)
+function parse_filebased ()
+{
+logtext "============= Processing filebased: $1 =================="
+file="$1"
+# important: initialize/reset global variables!
+XMLstring=""
+
+# nfo is the file extention KODI is expecting
+filexml="$file.nfo"
+fileraw="$file.raw"
+logtext "Target XML: $filexml"
+
+logdebug "Processing: $file"
+
+# ============= Posting Raw ========== (just for debug)
+# echo $info2 > "$fileraw"
+
+# Posting XML
+logdebug "==== XML-Fields ===="
+logdebug "Title: $Title"
+Outline="no outline"
+logdebug "Outline: $Outline"
+Plot="no Plot"
+logdebug "Plot: $Plot"
+logdebug "Genre: $Genre"
+logdebug "===== EOF XML ======="
+
+# Map Fields to XML-Output
+NfoFields=("title" "outline" "genre" "plot")
+Nfo[title]="$Title"
+Nfo[outline]="$Outline"
+Nfo[plot]="$Plot"
+Nfo[genre]="$Genre"
+
+# Map fields to CSV output
+# CSVFields=("title" "outline" "plot" "filename") - CHANGE: moved CSV-field-enumeration to configuration part
+to_printable "$Title"
+CSVdata[title]="$RETURN"
+to_printable "$Outline"
+CSVdata[outline]="$RETURN"
+to_printable "$Plot"
+CSVdata[outline]="$RETURN"
+to_printable "$Genre"
+CSVdata[genre]="$RETURN"
+to_printable "$Filename"
+CSVdata[filename]="$RETURN"
+
+# ===== producing XML ===============
+
+logdebug "Building $filexml"
+
+build_XMLstring
+to_printable "$XMLstring"
+XMLstring="$RETURN"
+
+write_CSVdata
+
+logdebug "XMLstring: $XMLstring"
+if [ $DRYRUN == "y" ]; then
+    logdebug "NOT written $filexml (DRYRUN!)"
+else
+    echo $XMLstring | iconv -f ISO-8859-1 -t ASCII//TRANSLIT > "$filexml"
+    logdebug "written: $filexml"
+fi
+
+logdebug "Finished processing $file"
+
+} # === END parse_filebased ====
+
+
+
 # ========================== parse_eit ==================
 # parameter: filename
 function parse_eit ()
@@ -434,6 +595,8 @@ fi
 logdebug "Finished processing $file"
 
 } # === END parse_eit ====
+
+
 
 function to_printable {
 # return value is written to global RETURN
